@@ -21,9 +21,9 @@ provider:
 
 plugins:
   - serverless-plugin-typescript 
-  - serverless-offline
   - serverless-webpack
   - serverless-s3-sync
+  # - serverless-offline
 
 functions:
   testEmail:

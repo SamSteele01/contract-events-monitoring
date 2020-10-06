@@ -61,7 +61,7 @@ export const create: Handler = async (event: any, _context: Context) => {
 export const list: Handler = async (event: any, _context: Context) => {
   
   const params = {
-    TableName: process.env.DYNAMODB_CONTRACT_TABLE || 'Contract',
+    TableName: process.env.DYNAMODB_TABLE || 'Contract',
   };
 
   dynamoDb.scan(params, (error, result) => {
@@ -118,18 +118,20 @@ export const get: Handler = async (event: any, _context: Context) => {
 
 }
 
+/* may need multiple update handlers */
 export const update: Handler = async (event: any, _context: Context) => {
   
   const timestamp = new Date().getTime();
   const data = JSON.parse(event.body);
 
   // validation
-  if (typeof data.text !== 'string' || typeof data.checked !== 'boolean') {
+  // see docs/dataStructures.js
+  if (/* shape of data is not correct */) {
     console.error('Validation Failed');
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'text/plain' },
-      body: 'Couldn\'t update the todo item.',
+      body: 'The data is not correct in the correct format.',
     };
   }
 
