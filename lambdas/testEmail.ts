@@ -1,7 +1,7 @@
+import 'source-map-support/register';
 import fs from 'fs';
 import * as AWS from 'aws-sdk';
 import { Handler, Context } from 'aws-lambda';
-import 'source-map-support/register';
 import handlebars from 'handlebars';
 
 const ses = new AWS.SES();
@@ -14,7 +14,7 @@ export const send: Handler = async (event, _context) => {
   const data = JSON.parse(event.body)
   
   // get template
-  const testHtml = fs.readFileSync('../data/emailTemplates/test.html');
+  const testHtml = fs.readFileSync('../data/emailTemplates/test.html'); // this doesn't work !!
   
   // compile
   const template = handlebars.compile(testHtml);
@@ -25,7 +25,8 @@ export const send: Handler = async (event, _context) => {
   })
   
   const params = {
-    Source: process.env.FROM_ADDRESS,
+    Source: process.env.FROM_ADDRESS, // has to be verified address
+    ReturnPath: 'it-blew-up@mailinator.com',
     Destination: {
       ToAddresses: [
         data.email

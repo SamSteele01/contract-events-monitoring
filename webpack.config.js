@@ -17,6 +17,7 @@ module.exports = {
     libraryTarget: 'commonjs',
     path: path.join(__dirname, '.webpack'),
     filename: '[name].js',
+    sourceMapFilename: '[file].map',
   },
   target: 'node',
   externals: [nodeExternals()],

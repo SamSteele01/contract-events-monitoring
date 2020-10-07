@@ -1,6 +1,6 @@
+import 'source-map-support/register';
 import * as AWS from 'aws-sdk';
 import { Handler, Context } from 'aws-lambda';
-import 'source-map-support/register';
 
 const ses = new AWS.SES();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();

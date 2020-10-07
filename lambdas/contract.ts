@@ -2,9 +2,9 @@
   CRUD for contracts table
 */
 
+import 'source-map-support/register';
 import * as AWS from 'aws-sdk'; // eslint-disable-line import/no-extraneous-dependencies
 import { Handler, Context } from 'aws-lambda';
-import 'source-map-support/register';
 import { uuid } from 'uuid'
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
@@ -61,7 +61,7 @@ export const create: Handler = async (event: any, _context: Context) => {
 export const list: Handler = async (event: any, _context: Context) => {
   
   const params = {
-    TableName: process.env.DYNAMODB_TABLE || 'Contract',
+    TableName: process.env.DYNAMODB_TABLE,
   };
 
   dynamoDb.scan(params, (error, result) => {
@@ -126,7 +126,7 @@ export const update: Handler = async (event: any, _context: Context) => {
 
   // validation
   // see docs/dataStructures.js
-  if (/* shape of data is not correct */) {
+  if (!data/* shape of data is not correct */) {
     console.error('Validation Failed');
     return {
       statusCode: 400,
@@ -174,7 +174,7 @@ export const update: Handler = async (event: any, _context: Context) => {
 
 }
 
-export const delete: Handler = async (event: any, _context: Context) => {
+export const deleteContract: Handler = async (event: any, _context: Context) => {
   
   const params = {
     TableName: process.env.DYNAMODB_TABLE,

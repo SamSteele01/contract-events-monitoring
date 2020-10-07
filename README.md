@@ -4,15 +4,27 @@ Enter Ethereum smart contract addresses and ABIs, and enter email addresses to r
 
 ![](./docs/events-monitoring-lambdas.png)
 
-lambdas needed:
-* CRON -> contracts -> events -> emails
-* CRUD contracts
-* test email
+### UI 
+deployed at: http://oz-contract-event-monitoring-svelte-ui.s3-website.us-east-2.amazonaws.com
+
+---
+
+### Serverless
+
+This project uses the [serverless](https://www.serverless.com/) framework.
+
+Plugins used:
+- [serverless-plugin-typescript](https://github.com/prisma-labs/serverless-plugin-typescript) 
+- [serverless-webpack](https://github.com/serverless-heaven/serverless-webpack)
+- [serverless-s3-sync](https://github.com/k1LoW/serverless-s3-sync)
+
+---
 
 ### Todo
 
-- [ ] set up SES
+- [x] set up SES
 - [ ] test send email
+- [x] deploy using serverless
 - [ ] build out UI
 - [ ] test lambdas
 - [ ] get contracts for testing

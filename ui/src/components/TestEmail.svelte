@@ -4,12 +4,21 @@
 
   import { TextInput, Button } from "carbon-components-svelte";
 
-  function postTestEmail() {
+  async function postTestEmail() {
     // validate
     // send
     console.log(email, message);
+    
+    const response = await fetch('https://uryh1edyml.execute-api.us-east-2.amazonaws.com/dev/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, message })
+    });
     email = "";
     message = "";
+    console.log(response.json());
   }
 </script>
 

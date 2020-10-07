@@ -8,6 +8,7 @@ provider:
   environment:
     NODE_ENV: dev
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    FROM_ADDRESS: 'ssteele017@gmail.com'
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -18,12 +19,33 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
-
+      
 plugins:
-  - serverless-plugin-typescript 
+  # - serverless-plugin-typescript 
   - serverless-webpack
   - serverless-s3-sync
   # - serverless-offline
+  
+custom:
+  s3Sync:
+    - bucketName: oz-contract-event-monitoring-svelte-ui
+      localDir: ui/build
+      deleteRemoved: true # optional, indicates whether sync deletes files no longer present in localDir. Defaults to 'true'
+      acl: public-read # optional
+      followSymlinks: true # optional
+      defaultContentType: text/html # optional
+      params: # optional
+        - index.html:
+            CacheControl: 'no-cache'
+        - "*.js":
+            CacheControl: 'public, max-age=31536000'
+      bucketTags: # optional, these are appended to existing S3 bucket tags (overwriting tags with the same key)
+        tagKey1: tagValue1
+        tagKey2: tagValue2
+
+  webpack:
+    webpackConfig: 'webpack.config.js'
+    includeModules: true
 
 functions:
   testEmail:
@@ -37,7 +59,7 @@ functions:
     handler: lambdas/web3.getLatestEventsAndProcess
     events:
       # Invoke Lambda function every 5 minutes
-      - schedule: rate(5 minute)
+      - schedule: rate(5 minutes)
       
   create:
     handler: lambdas/contract.create
@@ -61,10 +83,10 @@ functions:
     handler: lambdas/contract.update
     events:
       - http:
-        path: contracts/{id}
-        method: put
+          path: contracts/{id}
+          method: put
   delete:
-    handler: lambdas/contract.delete
+    handler: lambdas/contract.deleteContract
     events:
       - http:
           path: contracts/{id}
@@ -72,13 +94,33 @@ functions:
 
 resources:
   Resources:
-    SvelteUIBucket:
+    SvelteUIS3Bucket:
       Type: 'AWS::S3::Bucket'
       Properties:
         AccessControl: 'PublicRead'
-        BucketName: 'oz-code-challenge-svelte-ui'
+        BucketName: oz-contract-event-monitoring-svelte-ui
         WebsiteConfiguration:
           IndexDocument: 'index.html'
+          ErrorDocument: error.html
+          
+  # Resources:
+    # AssetsBucket:
+    #   Type: AWS::S3::Bucket
+    #   Properties:
+    #     BucketName: my-static-site-assets
+    # OtherSiteBucket:
+    #   Type: AWS::S3::Bucket
+    #   Properties:
+    #     BucketName: my-other-site
+    #     AccessControl: PublicRead
+    #     WebsiteConfiguration:
+    #       IndexDocument: index.html
+    #       ErrorDocument: error.html
+    # AnotherBucket:
+    #   Type: AWS::S3::Bucket
+  # Outputs:
+  #   AnotherBucketNameOutputKey:
+  #     Value: !Ref AnotherBucket
     
     ContractsDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
