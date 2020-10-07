@@ -1,64 +1,28 @@
-# svelte app
+# Contract Event Monitoring UI
 
-This is a project template for [Svelte](https://svelte.dev) apps. It lives at https://github.com/sveltejs/template-webpack.
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+![code size](https://img.shields.io/github/languages/code-size/SamSteele01/contract-events-monitoring)
 
-To create a new project based on this template using [degit](https://github.com/Rich-Harris/degit):
+> Example set-up using [webpack](https://github.com/webpack/webpack).
 
-```bash
-npx degit sveltejs/template-webpack svelte-app
+## Getting started
+
+Scaffold a new project using [degit](https://github.com/Rich-Harris/degit):
+
+```sh
+npx degit ibm/carbon-components-svelte#webpack svelte-app
 cd svelte-app
+yarn install
 ```
 
-*Note that you will need to have [Node.js](https://nodejs.org) installed.*
+## Available scripts
 
+### `yarn dev`
 
-## Get started
+Starts the app in development mode.
 
-Install the dependencies...
+### `yarn build`
 
-```bash
-cd svelte-app
-npm install
-```
-
-...then start webpack:
-
-```bash
-npm run dev
-```
-
-Navigate to [localhost:8080](http://localhost:8080). You should see your app running. Edit a component file in `src`, save it, and the page should reload with your changes.
-
-
-## Deploying to the web
-
-### With [now](https://zeit.co/now)
-
-Install `now` if you haven't already:
-
-```bash
-npm install -g now
-```
-
-Then, from within your project folder:
-
-```bash
-now
-```
-
-As an alternative, use the [Now desktop client](https://zeit.co/download) and simply drag the unzipped project folder to the taskbar icon.
-
-### With [surge](https://surge.sh/)
-
-Install `surge` if you haven't already:
-
-```bash
-npm install -g surge
-```
-
-Then, from within your project folder:
-
-```bash
-npm run build
-surge public
-```
+Builds the app for production.
+SamSteele01
+contract-events-monitoring
