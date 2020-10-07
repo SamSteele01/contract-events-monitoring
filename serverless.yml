@@ -11,14 +11,18 @@ provider:
     FROM_ADDRESS: 'ssteele017@gmail.com'
   iamRoleStatements:
     - Effect: Allow
+      # Action:
+      #   - dynamodb:Query
+      #   - dynamodb:Scan
+      #   - dynamodb:GetItem
+      #   - dynamodb:PutItem
+      #   - dynamodb:UpdateItem
+      #   - dynamodb:DeleteItem
+      # Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
       Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+        - dynamodb:*
+        - ses:*
+      Resource: '*'
       
 plugins:
   # - serverless-plugin-typescript 
@@ -39,9 +43,9 @@ custom:
             CacheControl: 'no-cache'
         - "*.js":
             CacheControl: 'public, max-age=31536000'
-      bucketTags: # optional, these are appended to existing S3 bucket tags (overwriting tags with the same key)
-        tagKey1: tagValue1
-        tagKey2: tagValue2
+      # bucketTags: # optional, these are appended to existing S3 bucket tags (overwriting tags with the same key)
+      #   tagKey1: tagValue1
+      #   tagKey2: tagValue2
 
   webpack:
     webpackConfig: 'webpack.config.js'
@@ -52,14 +56,15 @@ functions:
     handler: lambdas/testEmail.send
     events:
       - http:
-          path: test
+          path: test-email
           method: post
+          cors: true
           
   getLatestEventsAndProcess:
     handler: lambdas/web3.getLatestEventsAndProcess
     events:
-      # Invoke Lambda function every 5 minutes
-      - schedule: rate(5 minutes)
+      # - schedule: rate(5 minutes)
+      - schedule: rate(1 hour)
       
   create:
     handler: lambdas/contract.create
@@ -67,30 +72,35 @@ functions:
       - http:
           path: contracts
           method: post
+          cors: true
   list:
     handler: lambdas/contract.list
     events:
       - http:
           path: contracts
           method: get
+          cors: true
   get:
     handler: lambdas/contract.get
     events:
       - http:
           path: contracts/{id}
           method: get
+          cors: true
   update:
     handler: lambdas/contract.update
     events:
       - http:
           path: contracts/{id}
           method: put
+          cors: true
   delete:
     handler: lambdas/contract.deleteContract
     events:
       - http:
           path: contracts/{id}
           method: delete
+          cors: true
 
 resources:
   Resources:
@@ -102,25 +112,6 @@ resources:
         WebsiteConfiguration:
           IndexDocument: 'index.html'
           ErrorDocument: error.html
-          
-  # Resources:
-    # AssetsBucket:
-    #   Type: AWS::S3::Bucket
-    #   Properties:
-    #     BucketName: my-static-site-assets
-    # OtherSiteBucket:
-    #   Type: AWS::S3::Bucket
-    #   Properties:
-    #     BucketName: my-other-site
-    #     AccessControl: PublicRead
-    #     WebsiteConfiguration:
-    #       IndexDocument: index.html
-    #       ErrorDocument: error.html
-    # AnotherBucket:
-    #   Type: AWS::S3::Bucket
-  # Outputs:
-  #   AnotherBucketNameOutputKey:
-  #     Value: !Ref AnotherBucket
     
     ContractsDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
@@ -138,7 +129,4 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.DYNAMODB_TABLE}
-        
-    # EmailService:
-    #   Type: 'AWS::SES'
         

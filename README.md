@@ -24,7 +24,11 @@ Plugins used:
 
 - [x] set up SES
 - [ ] test send email
+  - [ ] debug error with fs.readFileSync
+- [ ] run locally
 - [x] deploy using serverless
 - [ ] build out UI
+  - [ ] create all components
+  - [ ] connect to APIs
 - [ ] test lambdas
 - [ ] get contracts for testing

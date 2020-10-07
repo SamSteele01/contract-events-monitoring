@@ -9,8 +9,9 @@
     // send
     console.log(email, message);
     
-    const response = await fetch('https://uryh1edyml.execute-api.us-east-2.amazonaws.com/dev/test', {
+    const response = await fetch('https://uryh1edyml.execute-api.us-east-2.amazonaws.com/dev/test-email', {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json'
       },
