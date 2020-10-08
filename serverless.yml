@@ -1,0 +1,132 @@
+service: contract-events-monitoring
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  profile: oz-sam-test
+  region: us-east-2
+  environment:
+    NODE_ENV: dev
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    FROM_ADDRESS: 'ssteele017@gmail.com'
+  iamRoleStatements:
+    - Effect: Allow
+      # Action:
+      #   - dynamodb:Query
+      #   - dynamodb:Scan
+      #   - dynamodb:GetItem
+      #   - dynamodb:PutItem
+      #   - dynamodb:UpdateItem
+      #   - dynamodb:DeleteItem
+      # Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      Action:
+        - dynamodb:*
+        - ses:*
+      Resource: '*'
+      
+plugins:
+  # - serverless-plugin-typescript 
+  - serverless-webpack
+  - serverless-s3-sync
+  # - serverless-offline
+  
+custom:
+  s3Sync:
+    - bucketName: oz-contract-event-monitoring-svelte-ui
+      localDir: ui/build
+      deleteRemoved: true # optional, indicates whether sync deletes files no longer present in localDir. Defaults to 'true'
+      acl: public-read # optional
+      followSymlinks: true # optional
+      defaultContentType: text/html # optional
+      params: # optional
+        - index.html:
+            CacheControl: 'no-cache'
+        - "*.js":
+            CacheControl: 'public, max-age=31536000'
+      # bucketTags: # optional, these are appended to existing S3 bucket tags (overwriting tags with the same key)
+      #   tagKey1: tagValue1
+      #   tagKey2: tagValue2
+
+  webpack:
+    webpackConfig: 'webpack.config.js'
+    includeModules: true
+
+functions:
+  testEmail:
+    handler: lambdas/testEmail.send
+    events:
+      - http:
+          path: test-email
+          method: post
+          cors: true
+          
+  getLatestEventsAndProcess:
+    handler: lambdas/web3.getLatestEventsAndProcess
+    events:
+      # - schedule: rate(5 minutes)
+      - schedule: rate(1 hour)
+      
+  create:
+    handler: lambdas/contract.create
+    events:
+      - http:
+          path: contracts
+          method: post
+          cors: true
+  list:
+    handler: lambdas/contract.list
+    events:
+      - http:
+          path: contracts
+          method: get
+          cors: true
+  get:
+    handler: lambdas/contract.get
+    events:
+      - http:
+          path: contracts/{id}
+          method: get
+          cors: true
+  update:
+    handler: lambdas/contract.update
+    events:
+      - http:
+          path: contracts/{id}
+          method: put
+          cors: true
+  delete:
+    handler: lambdas/contract.deleteContract
+    events:
+      - http:
+          path: contracts/{id}
+          method: delete
+          cors: true
+
+resources:
+  Resources:
+    SvelteUIS3Bucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        AccessControl: 'PublicRead'
+        BucketName: oz-contract-event-monitoring-svelte-ui
+        WebsiteConfiguration:
+          IndexDocument: 'index.html'
+          ErrorDocument: error.html
+    
+    ContractsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        
