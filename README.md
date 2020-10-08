@@ -2,7 +2,7 @@
 
 Enter Ethereum smart contract addresses and ABIs, and enter email addresses to receive emitted Events.
 
-![](./docs/events-monitoring-lambdas.png)
+![](./docs/events-monitoring-lambda.png)
 
 ### UI 
 deployed at: http://oz-contract-event-monitoring-svelte-ui.s3-website.us-east-2.amazonaws.com
@@ -23,8 +23,8 @@ Plugins used:
 ### Todo
 
 - [x] set up SES
-- [ ] test send email
-  - [ ] debug error with fs.readFileSync
+- [x] test send email
+  - [x] debug error with fs.readFileSync
 - [ ] run locally
 - [x] deploy using serverless
 - [ ] build out UI
@@ -32,3 +32,4 @@ Plugins used:
   - [ ] connect to APIs
 - [ ] test lambdas
 - [ ] get contracts for testing
+- [ ] test getting events from contracts
