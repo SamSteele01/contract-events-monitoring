@@ -1,13 +1,14 @@
-const contract = {
+interface Contract {
   id: string,
   name: string,
+  address: string,
   abi: string,
   lastBlockChecked: number,
   events: event[]
 }
 
-const event = {
+interface Event {
   name: string,
-  fields: string[],
+  inputs: string[],
   emails: email[]
 }
