@@ -5,6 +5,7 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const Dotenv = require('dotenv-webpack');
 
 const NODE_ENV = process.env.NODE_ENV || "development";
 const PROD = NODE_ENV === "production";
@@ -41,6 +42,7 @@ module.exports = {
     ],
   },
   plugins: [
+    new Dotenv(),
     new CleanWebpackPlugin(),
     new CopyPlugin({ patterns: [{ from: "public" }] }),
     new MiniCssExtractPlugin({
