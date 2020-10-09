@@ -2,205 +2,258 @@
   CRUD for contracts table
 */
 
-import 'source-map-support/register';
-import * as AWS from 'aws-sdk'; // eslint-disable-line import/no-extraneous-dependencies
-import { Handler, Context } from 'aws-lambda';
-import { uuid } from 'uuid'
+import "source-map-support/register";
+import * as AWS from "aws-sdk"; // eslint-disable-line import/no-extraneous-dependencies
+import { Handler, Context, APIGatewayEvent } from "aws-lambda";
+// import middy from "@middy/core";
+// import { cors } from "@middy/http-cors";
+// import { uuid } from "uuid";
+import {
+  validateAddress,
+  validateEmail,
+  validateNumber,
+  validateString,
+} from "../functions/validators";
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
+const createResponse = (body: any) => ({
+  statusCode: 200,
+  headers: { "Access-Control-Allow-Origin": "*" },
+  body: JSON.stringify(body),
+});
 
-export const create: Handler = async (event: any, _context: Context) => {
-  const timestamp = new Date().getTime();
+const createErrorResponse = (statusCode: number, message: string) => ({
+  statusCode: statusCode || 501,
+  headers: {
+    "Content-Type": "text/plain",
+    "Access-Control-Allow-Origin": "*",
+  },
+  body: message || "Incorrect id",
+});
+
+/* 
+  If an item that has the same primary key as the new item already exists in the specified table,
+  the new item completely replaces the existing item. -> need to prevent overrides!
+*/
+export const create: Handler = async (event: APIGatewayEvent, _context: Context) => {
   const data = JSON.parse(event.body);
-  
-  if (typeof data.text !== 'string') {
-    console.error('Validation Failed');
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'text/plain' },
-      body: 'Couldn\'t create the contract item.',
-    };
+  console.log("DATA", data);
+
+  // ------ validate input ------
+  try {
+    validateAddress(data.address);
+    validateString("network", data.network);
+    validateString("name", data.name);
+  } catch (error) {
+    return createErrorResponse(400, error.message);
   }
+  // abi is JSON
+  const events = [];
+
+  try {
+    const ABIjs = JSON.parse(data.abi.toString()); // needed?
+    // get event names and inputs
+    events = ABIjs.filter((obj) => obj.type === "event").map((event) => ({
+      name: event.name,
+      inputs: event.inputs,
+      emails: [],
+    }));
+  } catch (error) {
+    console.log("ERROR", error);
+    return createErrorResponse(400, "ABI is not formatted properly.");
+  }
+
+  const timestamp = new Date().getTime();
 
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Item: {
-      id: uuid.v1(),
-      name: data.name,
+      // id: uuid.v1(),
       address: data.address,
+      network: data.network,
+      name: data.name,
       abi: data.abi,
+      events: events,
       createdAt: timestamp,
       updatedAt: timestamp,
     },
   };
 
-  // write the todo to the database
-  dynamoDb.put(params, (error) => {
-    // handle potential errors
-    if (error) {
-      console.error(error);
-      return {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t create the contract item.',
-      };
-    }
+  try {
+    const data = dynamoDb.put(params).promise();
+    console.log("create DATA", data);
 
-    // create a response
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify(params.Item),
-    };
-    return response;
-  });
+    return createResponse(data);
+  } catch (error) {
+    console.log("create ERROR", error);
+    return createErrorResponse(500, error.message);
+  }
+};
 
-}
-
-// fetch all contracts from the database
-export const list: Handler = async (event: any, _context: Context) => {
-  
+/**
+ * fetch all contracts from the database
+ */
+export const list: Handler = async (event: APIGatewayEvent, _context: Context) => {
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
+    AttributesToGet: ["address", "name", "network"],
   };
 
-  dynamoDb.scan(params, (error, result) => {
-    // handle potential errors
-    if (error) {
-      console.error(error);
-      return {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t fetch the contracts.',
-      };
-    }
+  try {
+    const contracts = dynamoDb.scan(params).promise();
+    console.log("list CONTRACTS", contracts);
+    return createResponse(contracts);
+  } catch (error) {
+    console.log("list ERROR", error);
+    return createErrorResponse(500, error.message);
+  }
+};
 
-    // create a response
-    const response = {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: result.Items,
-    };
-    return response;
-  });
-
-}
-
-// fetch contract by id
-export const get: Handler = async (event: any, _context: Context) => {
-  
-  const params = {
-    TableName: process.env.DYNAMODB_TABLE,
-    Key: {
-      id: event.pathParameters.id,
-    },
-  };
-
-  dynamoDb.get(params, (error, result) => {
-    // handle potential errors
-    if (error) {
-      console.error(error);
-      return {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t fetch the contract.',
-      };
-    }
-
-    // create a response
-    const response = {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: result.Item,
-    };
-    return response;
-  });
-
-}
-
-/* may need multiple update handlers */
-export const update: Handler = async (event: any, _context: Context) => {
-  
-  const timestamp = new Date().getTime();
-  const data = JSON.parse(event.body);
-
-  // validation
-  // see docs/dataStructures.js
-  if (!data/* shape of data is not correct */) {
-    console.error('Validation Failed');
-    return {
-      statusCode: 400,
-      headers: { 'Content-Type': 'text/plain' },
-      body: 'The data is not correct in the correct format.',
-    };
+/**
+ * @param address
+ */
+export const get: Handler = async (event: APIGatewayEvent, _context: Context) => {
+  try {
+    validateAddress(event.pathParameters.address);
+  } catch (error) {
+    return createErrorResponse(400, error.message);
   }
 
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
-      id: event.pathParameters.id,
+      address: event.pathParameters.address,
     },
-    ExpressionAttributeNames: {
-      '#todo_text': 'text',
-    },
-    ExpressionAttributeValues: {
-      ':text': data.text,
-      ':checked': data.checked,
-      ':updatedAt': timestamp,
-    },
-    UpdateExpression: 'SET #todo_text = :text, checked = :checked, updatedAt = :updatedAt',
-    ReturnValues: 'ALL_NEW',
   };
 
-  // update the todo in the database
-  dynamoDb.update(params, (error, result) => {
-    // handle potential errors
-    if (error) {
-      console.error(error);
-      return {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t fetch the todo item.',
-      };
-    }
+  try {
+    const contract = await dynamoDb.get(params).promise();
+    return createResponse(contract);
+  } catch (error) {
+    return createErrorResponse(404, error.message);
+  }
+};
 
-    // create a response
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify(result.Attributes),
-    };
-    return response;
-  });
+/**
+ * @body address, eventIndex, email
+ */
+export const addEmail: Handler = async (
+  event: APIGatewayEvent,
+  _context: Context
+) => {
+  const data = JSON.parse(event.body);
 
-}
+  try {
+    validateAddress(data.address);
+    validateEmail(data.email);
+    validateNumber("eventIndex", data.eventIndex);
+  } catch (error) {
+    return createErrorResponse(400, error.message);
+  }
 
-export const deleteContract: Handler = async (event: any, _context: Context) => {
-  
+  const timestamp = new Date().getTime();
+
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
-      id: event.pathParameters.id,
+      address: data.address,
+    },
+    ExpressionAttributeValues: {
+      ":index": data.eventIndex,
+      ":email": data.email,
+      // ":updatedAt": timestamp,
+    },
+    UpdateExpression: "ADD events[:index].emails :email",
+    ReturnValues: "ALL_NEW",
+  };
+
+  try {
+    const data = dynamoDb.update(params).promise();
+    console.log("addEmail DATA", data);
+    return createResponse(data);
+  } catch (error) {
+    console.log("addEmail ERROR", error);
+    return createErrorResponse(500, error.message);
+  }
+};
+
+/**
+ * @body address, eventIndex, emailIndex
+ */
+export const removeEmail: Handler = async (
+  event: APIGatewayEvent,
+  _context: Context
+) => {
+  const data = JSON.parse(event.body);
+
+  try {
+    validateAddress(data.address);
+    validateNumber("eventIndex", data.eventIndex);
+    validateNumber("emailIndex", data.emailIndex);
+  } catch (error) {
+    return createErrorResponse(400, error.message);
+  }
+
+  const timestamp = new Date().getTime();
+
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE,
+    Key: {
+      address: data.address,
+    },
+    ExpressionAttributeValues: {
+      ":index": data.eventIndex,
+      ":email": data.emailIndex,
+      // ":updatedAt": timestamp,
+    },
+    UpdateExpression: "REMOVE events[:index].emails[:email]",
+    ReturnValues: "ALL_NEW",
+  };
+
+  try {
+    const data = dynamoDb.update(params).promise();
+    console.log("removeEmail DATA", data);
+    return createResponse(data);
+  } catch (error) {
+    console.log("removeEmail ERROR", error);
+    return createErrorResponse(500, error.message);
+  }
+};
+
+/**
+ * @param address
+ */
+export const deleteContract: Handler = async (
+  event: APIGatewayEvent,
+  _context: Context
+) => {
+  try {
+    validateAddress(event.pathParameters.address);
+  } catch (error) {
+    return createErrorResponse(400, error.message);
+  }
+
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE,
+    Key: {
+      address: event.pathParameters.address,
     },
   };
 
-  // delete the todo from the database
-  dynamoDb.delete(params, (error) => {
-    // handle potential errors
-    if (error) {
-      console.error(error);
-      return {
-        statusCode: error.statusCode || 501,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Couldn\'t remove the contract.',
-      };
-    }
+  try {
+    const data = dynamoDb.delete(params).promise();
+    console.log("delete DATA", data);
+    return createResponse(data);
+  } catch (error) {
+    console.log("delete ERROR", error);
+    return createErrorResponse(500, error.message);
+  }
+};
 
-    // create a response
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify({}),
-    };
-    return response;
-  });
-
-}
+// export const create = middy(_create).use(cors());
+// export const list = middy(_list).use(cors());
+// export const get = middy(_get).use(cors());
+// export const addEmail = middy(_addEmail).use(cors());
+// export const removeEmail = middy(_removeEmail).use(cors());
+// export const deleteContract = middy(_deleteContract).use(cors());
