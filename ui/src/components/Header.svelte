@@ -17,7 +17,7 @@
     SideNavMenu,
     SideNavMenuItem,
     Select,
-    SelectItem
+    SelectItem,
   } from "carbon-components-svelte";
   import Notification20 from "carbon-icons-svelte/lib/Notification20";
   import UserAvatar20 from "carbon-icons-svelte/lib/UserAvatar20";
@@ -30,10 +30,10 @@
   let isOpen = false;
 
   $: if (ctx) {
-    ctx.dark.subscribe(value => {
+    ctx.dark.subscribe((value) => {
       console.log("dark mode?", value);
     });
-    ctx.light.subscribe(value => {
+    ctx.light.subscribe((value) => {
       console.log("light mode?", value);
     });
     ctx.updateVar("--cds-productive-heading-06-font-size", "4rem");
@@ -44,13 +44,16 @@
   }
 </script>
 
-<Header company="IBM" platformName="Carbon Components Svelte" bind:isSideNavOpen >
+<Header
+  company="OpenZeppelin"
+  platformName="Contract Events Monitor"
+  bind:isSideNavOpen>
   <div slot="skip-to-content">
     <SkipToContent />
   </div>
   <HeaderUtilities>
-    <HeaderGlobalAction aria-label="Notifications" icon="{Notification20}" />
-    <HeaderGlobalAction aria-label="User Avatar" icon="{UserAvatar20}" />
+    <HeaderGlobalAction aria-label="Notifications" icon={Notification20} />
+    <HeaderGlobalAction aria-label="User Avatar" icon={UserAvatar20} />
     <!-- <HeaderGlobalAction aria-label="App Switcher" icon="{AppSwitcher20}" on:toggle={toggleSwitcher} /> -->
     <HeaderAction bind:isOpen>
     <Column lg="{2}">
