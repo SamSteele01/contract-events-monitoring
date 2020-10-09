@@ -22,14 +22,20 @@ Plugins used:
 
 ### Todo
 
+email:
 - [x] set up SES
-- [x] test send email
-  - [x] debug error with fs.readFileSync
+- [x] test send
+- [x] debug error with fs.readFileSync
+- [ ] remove sandbox
+
+
+UI:
+- [ ] parse ABI on blur
+- [ ] create all components
+- [ ] connect to APIs
+  
+lambdas:
 - [ ] run locally
 - [x] deploy using serverless
-- [ ] build out UI
-  - [ ] create all components
-  - [ ] connect to APIs
-- [ ] test lambdas
-- [ ] get contracts for testing
+- [ ] get contracts for testing - use popular tokens or defi projects
 - [ ] test getting events from contracts
