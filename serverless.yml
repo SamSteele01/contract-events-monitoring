@@ -84,21 +84,28 @@ functions:
     handler: lambdas/contract.get
     events:
       - http:
-          path: contracts/{id}
+          path: contracts/{address}
           method: get
           cors: true
-  update:
-    handler: lambdas/contract.update
+  addEmail:
+    handler: lambdas/contract.addEmail
     events:
       - http:
-          path: contracts/{id}
+          path: contracts/add-email
+          method: put
+          cors: true
+  removeEmail:
+    handler: lambdas/contract.removeEmail
+    events:
+      - http:
+          path: contracts/remove-email
           method: put
           cors: true
   delete:
     handler: lambdas/contract.deleteContract
     events:
       - http:
-          path: contracts/{id}
+          path: contracts/{address}
           method: delete
           cors: true
 
@@ -119,11 +126,11 @@ resources:
       Properties:
         AttributeDefinitions:
           -
-            AttributeName: id
+            AttributeName: address
             AttributeType: S
         KeySchema:
           -
-            AttributeName: id
+            AttributeName: address
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
