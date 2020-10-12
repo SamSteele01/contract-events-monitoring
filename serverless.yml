@@ -25,16 +25,21 @@ provider:
       Resource: '*'
       
 plugins:
-  # - serverless-plugin-typescript 
+  # - serverless-plugin-typescript # conflict with webpack ts-loader
   - serverless-webpack
   - serverless-s3-sync
-  # - serverless-offline
+  - serverless-dynamodb-local
+  - serverless-offline
   
 custom:
+  webpack:
+    webpackConfig: 'webpack.config.js'
+    includeModules: true
+      
   s3Sync:
     - bucketName: oz-contract-event-monitoring-svelte-ui
       localDir: ui/build
-      deleteRemoved: true # optional, indicates whether sync deletes files no longer present in localDir. Defaults to 'true'
+      deleteRemoved: false # optional, indicates whether sync deletes files no longer present in localDir. Defaults to 'true'
       acl: public-read # optional
       followSymlinks: true # optional
       defaultContentType: text/html # optional
@@ -47,9 +52,20 @@ custom:
       #   tagKey1: tagValue1
       #   tagKey2: tagValue2
 
-  webpack:
-    webpackConfig: 'webpack.config.js'
-    includeModules: true
+  dynamodb:
+  # If you only want to use DynamoDB Local in some stages, declare them here
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      heapInitial: 200m
+      heapMax: 1g
+      migrate: true
+      seed: true
+      convertEmptyValues: true
+    # Uncomment only if you already have a DynamoDB running locally
+    # noStart: true
 
 functions:
   testEmail:

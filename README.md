@@ -17,6 +17,8 @@ Plugins used:
 - [serverless-plugin-typescript](https://github.com/prisma-labs/serverless-plugin-typescript) 
 - [serverless-webpack](https://github.com/serverless-heaven/serverless-webpack)
 - [serverless-s3-sync](https://github.com/k1LoW/serverless-s3-sync)
+- [serverless-offline](https://github.com/dherault/serverless-offline)
+- [serverless-dynamodb-local](https://github.com/99x/serverless-dynamodb-local)
 
 ---
 
@@ -35,7 +37,7 @@ UI:
 - [ ] connect to APIs
   
 lambdas:
-- [ ] run locally
+- [x] run locally
 - [x] deploy using serverless
 - [ ] get contracts for testing - use popular tokens or defi projects
 - [ ] test getting events from contracts
