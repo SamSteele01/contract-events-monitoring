@@ -57,6 +57,30 @@ const emailTemplate = `
   </html>
 `
 
+async function updateLastBlockChecked(blockNumber: number, contractAddress: string) {
+  const params = {
+    TableName: process.env.CONTRACT_TABLE,
+    Key: {
+      address: contractAddress,
+    },
+    ExpressionAttributeValues: {
+      ":blockNumber": blockNumber,
+    },
+    UpdateExpression: 'SET lastBlockChecked = :blockNumber'
+  };
+
+  try {
+    await dynamoDb.update(params).promise();
+    return `UPDATELASTBLOCKCHECKED SUCCESS ${contractAddress} ${blockNumber}`;
+  } catch (error) {
+    console.log("UPDATELASTBLOCKCHECKED ERROR", error);
+    // call recursively until it succedes. If there are DB connection issues we may have bigger problems.
+    return setTimeout(async () => {
+      return await updateLastBlockChecked(blockNumber, contractAddress);
+    }, 50);
+  }
+}
+
 // called by CRON event
 export const getLatestEventsAndProcess: Handler = async (event, _context: Context) => {
   // let processEventsFromNetworkPromises = [];
@@ -161,29 +185,20 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
         });
       }
     });
+  });
 
-    // update db
-    web3.eth.getBlockNumber().then(async number => {
-      const params = {
-        TableName: process.env.CONTRACT_TABLE,
-        Key: {
-          address: contract.address,
-        },
-        ExpressionAttributeValues: {
-          ":blockNumber": number,
-        },
-        UpdateExpression: 'SET lastBlockChecked = :blockNumber'
-      };
-
-      try {
-        const updateLastBlockChecked = await dynamoDb.update(params).promise();
-        console.log('UPDATELASTBLOCKCHECKED', updateLastBlockChecked);
-      } catch (error) {
-        console.log("UPDATELASTBLOCKCHECKED ERROR", error);
-        // should deal with possible duplicates
-      }
+  // update db
+  let updateBlockNumberPromises = [];
+  web3.eth.getBlockNumber().then(number => {
+    contractDbItems.forEach(contract => {
+      updateBlockNumberPromises.push(updateLastBlockChecked(number, contract.address));
     });
   });
+  Promise.all(updateBlockNumberPromises).then((logs: string[]) => {
+    logs.forEach(log => {
+      console.log(log);
+    });
+  })
 
   // try again with requestErrors 
   // try again with emailErrors
