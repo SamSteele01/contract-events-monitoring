@@ -48,7 +48,7 @@ const emailTemplate = `
         </tr>
         {{#each eventHashes as |eventHash|}}
           <tr>
-            <a href="https://etherscan.io/tx/{{eventHash}}" target="_blank">{{event}}</a> 
+            <a href="https://etherscan.io/tx/{{eventHash}}" target="_blank">{{eventHash}}</a> 
           </tr>
         {{/each}}
         
