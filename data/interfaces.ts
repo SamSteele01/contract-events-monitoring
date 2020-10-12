@@ -1,14 +1,14 @@
-interface Contract {
+export interface Contract {
   id: string,
   name: string,
   address: string,
   abi: string,
   lastBlockChecked: number,
-  events: event[]
+  events: Event[]
 }
 
-interface Event {
+export interface Event {
   name: string,
   inputs: string[],
-  emails: email[]
+  emails: string[]
 }

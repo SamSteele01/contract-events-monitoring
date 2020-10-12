@@ -6,6 +6,7 @@ import "source-map-support/register";
 import * as AWS from "aws-sdk"; // eslint-disable-line import/no-extraneous-dependencies
 import { Handler, Context, APIGatewayEvent } from "aws-lambda";
 import dynamodbLocal from 'serverless-dynamodb-client';
+import Web3 from "web3";
 import { createResponse, createErrorResponse } from '../functions/responses';
 import {
   validateAddress,
@@ -16,6 +17,7 @@ import {
 
 // const dynamoDb = new AWS.DynamoDB.DocumentClient();
 const dynamoDb = dynamodbLocal.doc;  // return an instance of new AWS.DynamoDB.DocumentClient() aimed locally.
+const web3 = new Web3('https://mainnet.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0')
 
 /* 
   If an item that has the same primary key as the new item already exists in the specified table,
@@ -54,16 +56,18 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
   }
 
   const timestamp = new Date().getTime();
+  // start checking for events after contract is entered
+  const currentBlock = await web3.eth.getBlockNumber();
 
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Item: {
-      // id: uuid.v1(),
       address: data.address,
       network: data.network,
       name: data.name,
       abi: data.abi,
       events: events,
+      lastBlockChecked: currentBlock,
       createdAt: timestamp,
       updatedAt: timestamp,
     },
