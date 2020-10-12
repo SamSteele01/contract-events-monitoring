@@ -72,7 +72,7 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
   // })
 
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
   };
 
   let contractDbItems = [];
@@ -165,7 +165,7 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
     // update db
     web3.eth.getBlockNumber().then(async number => {
       const params = {
-        TableName: process.env.DYNAMODB_TABLE,
+        TableName: process.env.CONTRACT_TABLE,
         Key: {
           address: contract.address,
         },

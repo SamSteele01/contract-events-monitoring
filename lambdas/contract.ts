@@ -58,7 +58,7 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
   const currentBlock = await web3.eth.getBlockNumber();
 
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     Item: {
       address: data.address,
       network: data.network,
@@ -86,7 +86,7 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
  */
 export const list: Handler = async (event: APIGatewayEvent, _context: Context) => {
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     AttributesToGet: ["address", "name", "network"],
   };
 
@@ -111,7 +111,7 @@ export const get: Handler = async (event: APIGatewayEvent, _context: Context) =>
   }
 
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     Key: {
       address: event.pathParameters.address,
     },
@@ -147,7 +147,7 @@ export const addEmail: Handler = async (
   const timestamp = new Date().getTime();
 
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     Key: {
       address: data.address,
     },
@@ -192,7 +192,7 @@ export const removeEmail: Handler = async (
   }
 
   let params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     Key: {
       address: data.address,
     },
@@ -216,7 +216,7 @@ export const removeEmail: Handler = async (
   const timestamp = new Date().getTime();
 
   params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     Key: {
       address: data.address,
     },
@@ -259,7 +259,7 @@ export const deleteContract: Handler = async (
   }
 
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
     Key: {
       address: event.pathParameters.address,
     },
