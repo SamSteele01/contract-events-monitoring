@@ -14,6 +14,7 @@ import {
   validateNumber,
   validateString,
 } from "../functions/validators";
+import { Event } from '../data/interfaces';
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 // const dynamoDb = dynamodbLocal.doc;  // return an instance of new AWS.DynamoDB.DocumentClient() aimed locally.
@@ -37,11 +38,11 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
     return createErrorResponse(400, error.message);
   }
   // validate that abi is JSON
-  let events = [];
+  let events: Event[] = [];
   try {
     const ABIjs = JSON.parse(data.abi);
     // get event names and inputs
-    events = ABIjs.filter((obj) => obj.type === "event").map((event) => ({
+    events = ABIjs.filter((obj: any) => obj.type === "event").map((event: Event) => ({
       name: event.name,
       inputs: event.inputs,
       emails: [],
@@ -84,7 +85,7 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
 /**
  * fetch all contracts from the database
  */
-export const list: Handler = async (event: APIGatewayEvent, _context: Context) => {
+export const list: Handler = async (_event: APIGatewayEvent, _context: Context) => {
   const params = {
     TableName: process.env.CONTRACT_TABLE,
     AttributesToGet: ["address", "name", "network"],
@@ -199,23 +200,23 @@ export const removeEmail: Handler = async (
     AttributesToGet: ["events"]
   };
 
-  let document = {};
+  let indexToRemove = null;
   try {
-    document = await dynamoDb.get(params).promise();
+    let document = (await dynamoDb.get(params).promise()).Item;
+    // find the index
+    indexToRemove = document.events[data.eventIndex].emails.indexOf(data.email);
+    if (indexToRemove === -1) {
+      // element not found
+      return createErrorResponse(404, "Email not present on that event.");
+    }
   } catch (error) {
     return createErrorResponse(404, error.message);
   }
 
-  // find the index
-  const indexToRemove = document.Item.events[data.eventIndex].emails.indexOf(data.email);
-  if (indexToRemove === -1) {
-    // element not found
-    return createErrorResponse(404, "Email not present on that event.");
-  }
 
   const timestamp = new Date().getTime();
 
-  params = {
+  const updateParams = {
     TableName: process.env.CONTRACT_TABLE,
     Key: {
       address: data.address,
@@ -236,7 +237,7 @@ export const removeEmail: Handler = async (
   };
 
   try {
-    const data = await dynamoDb.update(params).promise();
+    const data = await dynamoDb.update(updateParams).promise();
     console.log("removeEmail DATA", data);
     return createResponse(data);
   } catch (error) {

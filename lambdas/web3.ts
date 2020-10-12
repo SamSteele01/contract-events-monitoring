@@ -13,8 +13,6 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 // const dynamoDb = dynamodbLocal.doc;
 const web3 = new Web3('https://mainnet.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0')
 
-// const networks = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']; // add testnets
-
 const emailTemplate = `
   <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
   <html xmlns="https://www.w3.org/1999/xhtml">
@@ -75,25 +73,13 @@ async function updateLastBlockChecked(blockNumber: number, contractAddress: stri
   } catch (error) {
     console.log("UPDATELASTBLOCKCHECKED ERROR", error);
     // call recursively until it succedes. If there are DB connection issues we may have bigger problems.
-    return setTimeout(async () => {
-      return await updateLastBlockChecked(blockNumber, contractAddress);
-    }, 50);
+    return await updateLastBlockChecked(blockNumber, contractAddress);
   }
 }
 
 // called by CRON event
-export const getLatestEventsAndProcess: Handler = async (event, _context: Context) => {
-  // let processEventsFromNetworkPromises = [];
-  // // look up each network, one at a time
-  // networks.forEach(network => {
-  //   const web3 = new Web3(`https://${network}.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0`); // url
-  //   // fire function
-  //   processEventsFromNetworkPromises.push(processEventsFromNetwork(web3)); // this function would be everything below
-  // })
-  // Promise.all(processEventsFromNetworkPromises).then(networks => {
-  //   console.log('NETWORKS', networks);
-  //   // process.exit();
-  // })
+export const getLatestEventsAndProcess: Handler = async (_event, _context: Context) => {
+  console.log('_EVENT', _event);
 
   const params = {
     TableName: process.env.CONTRACT_TABLE,
@@ -135,20 +121,20 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
         })
       }
       if (contractEvents.length > 0) {
-        console.log('CONTRACTEVENTS', contractEvents);
-        const eventHashes = contractEvents.map(contractEvent => contractEvent.transactionHash);
+        const eventHashes: string[] = contractEvents.map(contractEvent => contractEvent.transactionHash);
+        const uniqueTxHashes: string[] = [...new Set(eventHashes)];
         // prepare template - ideally we could map over events using a partial for each
-        // for now, just send an email that has a link to etherscan
+        // for now, just send an email that has links to etherscan
         const template = handlebars.compile(emailTemplate);
 
         const htmlEmail = template({
           contract: contract.name,
           event: event.name,
-          eventHashes
+          eventHashes: uniqueTxHashes
         })
 
-        const linksForText = eventHashes.reduce((_acc: string, eventHash) => {
-          _acc += `https://etherscan.io/tx/${eventHash} \n`
+        const linksForText = uniqueTxHashes.reduce((_acc: string, eventHash) => {
+          return _acc += `https://etherscan.io/tx/${eventHash} \n `
         }, '');
 
         const params = {
@@ -193,9 +179,7 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
     });
   });
   Promise.all(updateBlockNumberPromises).then((logs: string[]) => {
-    logs.forEach(log => {
-      console.log(log);
-    });
+    logs.forEach(log => console.log(log));
   })
 
   // try again with requestErrors 
