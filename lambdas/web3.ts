@@ -4,8 +4,8 @@ import { Handler, Context } from 'aws-lambda';
 // import dynamodbLocal from 'serverless-dynamodb-client';
 import Web3 from "web3";
 import handlebars from "handlebars";
-import { createResponse, createErrorResponse } from '../functions/responses';
-import { Contract, Event } from '../data/interfaces'
+import { createErrorResponse } from '../functions/responses';
+import { Event } from '../data/interfaces'
 
 
 const ses = new AWS.SES();
@@ -147,8 +147,8 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
           eventHashes
         })
 
-        const linksForText = eventHashes.reduce((acc, eventHash) => {
-          acc += `https://etherscan.io/tx/${eventHash} \n`
+        const linksForText = eventHashes.reduce((_acc: string, eventHash) => {
+          _acc += `https://etherscan.io/tx/${eventHash} \n`
         }, '');
 
         const params = {
