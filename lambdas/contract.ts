@@ -47,6 +47,9 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
       inputs: event.inputs,
       emails: [],
     }));
+    if (events.length === 0) {
+      return createErrorResponse(400, "That contract doesn't have any events to monitor.");
+    }
   } catch (error) {
     console.log("ERROR", error);
     return createErrorResponse(400, error.message); // dev only
