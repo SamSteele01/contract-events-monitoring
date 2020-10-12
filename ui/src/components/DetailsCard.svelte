@@ -5,10 +5,10 @@
   import {
     Accordion,
     AccordionItem,
+    Button,
     Column,
     Row,
-    TextInput,
-    Button,
+    TextInput
   } from "carbon-components-svelte";
   import superagent from "superagent";
   import EventItem from "./EventItem";

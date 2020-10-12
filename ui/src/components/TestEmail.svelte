@@ -2,7 +2,7 @@
   let email = "";
   let message = "";
 
-  import { TextInput, Button, Row } from "carbon-components-svelte";
+  import { TextInput, Button, Row, Column } from "carbon-components-svelte";
 
   async function postTestEmail() {
     // validate
@@ -15,9 +15,9 @@
         method: "POST",
         mode: "cors",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email, message }),
+        body: JSON.stringify({ email, message })
       }
     );
 
@@ -27,21 +27,23 @@
   }
 </script>
 
-<h3>Test email address</h3>
-<div style="padding: 1rem">
+<Row style="padding-top: 1rem; padding-bottom: 1rem">
+  <Column noGutter>
+    <h3>Test email address</h3>
+    <div style="padding: 1rem">
+      <TextInput
+        labelText="Email"
+        placeholder="Enter email address..."
+        bind:value={email} />
 
-    <TextInput
-      labelText="Email"
-      placeholder="Enter email address..."
-      bind:value={email} />
+      <TextInput
+        labelText="Message"
+        placeholder="Enter message to send..."
+        bind:value={message} />
 
-    <TextInput
-      labelText="Message"
-      placeholder="Enter message to send..."
-      bind:value={message} />
-
-    <Button style="margin-top: 1rem" on:click={postTestEmail}>
-      Send test email
-    </Button>
-
-</div>
+      <Button style="margin-top: 1rem" on:click={postTestEmail}>
+        Send test email
+      </Button>
+    </div>
+  </Column>
+</Row>

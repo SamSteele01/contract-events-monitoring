@@ -3,21 +3,21 @@
 
   import {
     Column,
-    SkipToContent,
     Header,
-    HeaderUtilities,
-    HeaderGlobalAction,
     HeaderAction,
-    HeaderPanelLinks,
+    HeaderGlobalAction,
     HeaderPanelDivider,
     HeaderPanelLink,
+    HeaderPanelLinks,
+    HeaderUtilities,
+    Select,
+    SelectItem,
     SideNav,
     SideNavItems,
     SideNavLink,
     SideNavMenu,
     SideNavMenuItem,
-    Select,
-    SelectItem,
+    SkipToContent
   } from "carbon-components-svelte";
   import Notification20 from "carbon-icons-svelte/lib/Notification20";
   import UserAvatar20 from "carbon-icons-svelte/lib/UserAvatar20";
@@ -30,10 +30,10 @@
   let isOpen = false;
 
   $: if (ctx) {
-    ctx.dark.subscribe((value) => {
+    ctx.dark.subscribe(value => {
       console.log("dark mode?", value);
     });
-    ctx.light.subscribe((value) => {
+    ctx.light.subscribe(value => {
       console.log("light mode?", value);
     });
     ctx.updateVar("--cds-productive-heading-06-font-size", "4rem");
@@ -83,14 +83,16 @@
 </Header>
 
 <SideNav bind:isOpen={isSideNavOpen}>
-  <SideNavItems>
+  <!-- <SideNavItems>
     <SideNavLink text="Contracts" />
     <SideNavLink text="Link 2" />
-    <SideNavLink text="Link 3" />
-    <!-- <SideNavMenu text="Menu">
-      <SideNavMenuItem href="/" text="Link 1" />
-      <SideNavMenuItem href="/" text="Link 2" />
-      <SideNavMenuItem href="/" text="Link 3" />
-    </SideNavMenu> -->
-  </SideNavItems>
+    <SideNavLink text="Link 3" /> -->
+    <!-- <SideNavMenu text="Menu"> -->
+      <SideNavMenuItem href="/" text="Home" />
+      <SideNavMenuItem href="/new-contract" text="Enter New Contract" />
+      <SideNavMenuItem href="/contract-list" text="Contracts List" />
+      <SideNavMenuItem href="/email" text="Test Email" />
+      
+    <!-- </SideNavMenu> -->
+  <!-- </SideNavItems> -->
 </SideNav>

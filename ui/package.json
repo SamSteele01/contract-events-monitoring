@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "dotenv-webpack": "^3.0.0",
+    "page": "^1.11.6",
     "superagent": "^6.1.0"
   }
 }
