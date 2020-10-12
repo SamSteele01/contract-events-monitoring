@@ -1,5 +1,6 @@
+import Web3 from 'web3';
 
-export function validateAddress(address: string): void|error {
+export function validateAddress(address: string): void | Error {
   if (!address) {
     throw new Error('Address is required.');
   }
@@ -9,9 +10,16 @@ export function validateAddress(address: string): void|error {
   if (typeof address !== 'string') {
     throw new Error('Address must be a string.');
   }
+  const regex = /[0-9xA-Fa-f]+/
+  if (!address.includes('0x') || !regex.test(address)) {
+    throw new Error('Not a valid Ethereum address')
+  }
+  if (address !== Web3.utils.toChecksumAddress(address)) {
+    throw new Error('Address must be checksummed.')
+  }
 }
 
-export function validateEmail(email: string): void|error {
+export function validateEmail(email: string): void | Error {
   const regex = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/
   if (!email) {
     throw new Error('Email is required.');
@@ -24,13 +32,13 @@ export function validateEmail(email: string): void|error {
   }
 }
 
-export function validateNumber(name: string, number: number): void|error {
+export function validateNumber(name: string, number: number): void | Error {
   if (typeof number !== 'number') {
     throw new Error(`${name} must be a number`);
   }
 }
 
-export function validateString(name: string, value: string): void|error {
+export function validateString(name: string, value: string): void | Error {
   if (!value) {
     throw new Error(`${name} is required`);
   }
