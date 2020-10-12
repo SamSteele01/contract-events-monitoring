@@ -19,15 +19,12 @@ export function validateEmail(email: string): void|error {
   if (typeof email !== 'string') {
     throw new Error('Email must be a string.');
   }
-  if (regex.test(email)) {
+  if (!regex.test(email)) {
     throw new Error('Email must be a valid email address.');
   }
 }
 
 export function validateNumber(name: string, number: number): void|error {
-  if (!number) {
-    throw new Error(`${name} is required`);
-  }
   if (typeof number !== 'number') {
     throw new Error(`${name} must be a number`);
   }

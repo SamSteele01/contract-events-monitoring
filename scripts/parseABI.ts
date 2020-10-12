@@ -1,11 +1,12 @@
-import { readFileSync } from 'fs';
+// import { readFileSync } from 'fs';
 
-const ABI = readFileSync('../contracts/DAI/ABI.json');
+// const ABI = readFileSync('../contracts/DAI/ABI.json');
+import { ABIjs } from '../contracts/DAI/ABI.js';
 
-console.log('ABI type', typeof ABI);
+console.log('ABI type', typeof ABIjs);
 
-const ABIjs = JSON.parse(ABI.toString());
-console.log('ABIJS type', typeof ABIjs);
+// const ABIjs = JSON.parse(ABI.toString());
+// console.log('ABIJS type', typeof ABIjs);
 
 const events = ABIjs.filter(obj => obj.type === 'event');
 

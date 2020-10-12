@@ -5,9 +5,8 @@
 import "source-map-support/register";
 import * as AWS from "aws-sdk"; // eslint-disable-line import/no-extraneous-dependencies
 import { Handler, Context, APIGatewayEvent } from "aws-lambda";
-// import middy from "@middy/core";
-// import { cors } from "@middy/http-cors";
-// import { uuid } from "uuid";
+import dynamodbLocal from 'serverless-dynamodb-client';
+import { createResponse, createErrorResponse } from '../functions/responses';
 import {
   validateAddress,
   validateEmail,
@@ -15,26 +14,13 @@ import {
   validateString,
 } from "../functions/validators";
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
-
-const createResponse = (body: any) => ({
-  statusCode: 200,
-  headers: { "Access-Control-Allow-Origin": "*" },
-  body: JSON.stringify(body),
-});
-
-const createErrorResponse = (statusCode: number, message: string) => ({
-  statusCode: statusCode || 501,
-  headers: {
-    "Content-Type": "text/plain",
-    "Access-Control-Allow-Origin": "*",
-  },
-  body: message || "Incorrect id",
-});
+// const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const dynamoDb = dynamodbLocal.doc;  // return an instance of new AWS.DynamoDB.DocumentClient() aimed locally.
 
 /* 
   If an item that has the same primary key as the new item already exists in the specified table,
   the new item completely replaces the existing item. -> need to prevent overrides!
+  Reusing a contract address will delete all of the emails added.
 */
 export const create: Handler = async (event: APIGatewayEvent, _context: Context) => {
   const data = JSON.parse(event.body);
@@ -49,10 +35,11 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
     return createErrorResponse(400, error.message);
   }
   // abi is JSON
-  const events = [];
+  let events = [];
 
   try {
-    const ABIjs = JSON.parse(data.abi.toString()); // needed?
+    // const ABIjs = JSON.parse(data.abi.toString()); // needed?
+    const ABIjs = JSON.parse(data.abi);
     // get event names and inputs
     events = ABIjs.filter((obj) => obj.type === "event").map((event) => ({
       name: event.name,
@@ -61,7 +48,9 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
     }));
   } catch (error) {
     console.log("ERROR", error);
-    return createErrorResponse(400, "ABI is not formatted properly.");
+    return createErrorResponse(400, error.message); // dev only
+
+    // return createErrorResponse(400, "ABI is not formatted properly.");
   }
 
   const timestamp = new Date().getTime();
@@ -81,9 +70,8 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
   };
 
   try {
-    const data = dynamoDb.put(params).promise();
+    const data = await dynamoDb.put(params).promise();
     console.log("create DATA", data);
-
     return createResponse(data);
   } catch (error) {
     console.log("create ERROR", error);
@@ -101,7 +89,7 @@ export const list: Handler = async (event: APIGatewayEvent, _context: Context) =
   };
 
   try {
-    const contracts = dynamoDb.scan(params).promise();
+    const contracts = await dynamoDb.scan(params).promise();
     console.log("list CONTRACTS", contracts);
     return createResponse(contracts);
   } catch (error) {
@@ -125,6 +113,7 @@ export const get: Handler = async (event: APIGatewayEvent, _context: Context) =>
     Key: {
       address: event.pathParameters.address,
     },
+    AttributesToGet: ["address", "name", "network", "events", "createdAt", "updatedAt"],
   };
 
   try {
@@ -143,6 +132,7 @@ export const addEmail: Handler = async (
   _context: Context
 ) => {
   const data = JSON.parse(event.body);
+  console.log('addEmail DATA', data);
 
   try {
     validateAddress(data.address);
@@ -159,17 +149,19 @@ export const addEmail: Handler = async (
     Key: {
       address: data.address,
     },
-    ExpressionAttributeValues: {
-      ":index": data.eventIndex,
-      ":email": data.email,
-      // ":updatedAt": timestamp,
+    ExpressionAttributeNames: {
+      "#uat": "updatedAt"
     },
-    UpdateExpression: "ADD events[:index].emails :email",
+    ExpressionAttributeValues: {
+      ":email": [data.email],
+      ":uat": timestamp,
+    },
+    UpdateExpression: `SET events[${data.eventIndex}].emails = list_append(events[${data.eventIndex}].emails , :email), #uat = :uat`,
     ReturnValues: "ALL_NEW",
   };
 
   try {
-    const data = dynamoDb.update(params).promise();
+    const data = await dynamoDb.update(params).promise();
     console.log("addEmail DATA", data);
     return createResponse(data);
   } catch (error) {
@@ -186,33 +178,63 @@ export const removeEmail: Handler = async (
   _context: Context
 ) => {
   const data = JSON.parse(event.body);
+  console.log('removeEmail DATA', data);
 
   try {
     validateAddress(data.address);
     validateNumber("eventIndex", data.eventIndex);
-    validateNumber("emailIndex", data.emailIndex);
+    // validateNumber("emailIndex", data.emailIndex); // may have race condition
+    validateEmail(data.email);
   } catch (error) {
     return createErrorResponse(400, error.message);
   }
 
-  const timestamp = new Date().getTime();
-
-  const params = {
+  let params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
       address: data.address,
     },
-    ExpressionAttributeValues: {
-      ":index": data.eventIndex,
-      ":email": data.emailIndex,
-      // ":updatedAt": timestamp,
+    AttributesToGet: ["events"]
+  };
+
+  let document = {};
+  try {
+    document = await dynamoDb.get(params).promise();
+  } catch (error) {
+    return createErrorResponse(404, error.message);
+  }
+
+  // find the index
+  const indexToRemove = document.Item.events[data.eventIndex].emails.indexOf(data.email);
+  if (indexToRemove === -1) {
+    // element not found
+    return createErrorResponse(404, "Email not present on that event.");
+  }
+
+  const timestamp = new Date().getTime();
+
+  params = {
+    TableName: process.env.DYNAMODB_TABLE,
+    Key: {
+      address: data.address,
     },
-    UpdateExpression: "REMOVE events[:index].emails[:email]",
+    ExpressionAttributeNames: {
+      "#uat": "updatedAt"
+    },
+    ExpressionAttributeValues: {
+      ":emailToRemove": data.email,
+      ":updatedAt": timestamp,
+    },
+    UpdateExpression: `
+      REMOVE events[${data.eventIndex}].emails[${indexToRemove}]
+      SET #uat = :updatedAt
+    `,
+    ConditionExpression: `events[${data.eventIndex}].emails[${indexToRemove}] = :emailToRemove`,
     ReturnValues: "ALL_NEW",
   };
 
   try {
-    const data = dynamoDb.update(params).promise();
+    const data = await dynamoDb.update(params).promise();
     console.log("removeEmail DATA", data);
     return createResponse(data);
   } catch (error) {
@@ -242,7 +264,7 @@ export const deleteContract: Handler = async (
   };
 
   try {
-    const data = dynamoDb.delete(params).promise();
+    const data = await dynamoDb.delete(params).promise();
     console.log("delete DATA", data);
     return createResponse(data);
   } catch (error) {
@@ -250,10 +272,3 @@ export const deleteContract: Handler = async (
     return createErrorResponse(500, error.message);
   }
 };
-
-// export const create = middy(_create).use(cors());
-// export const list = middy(_list).use(cors());
-// export const get = middy(_get).use(cors());
-// export const addEmail = middy(_addEmail).use(cors());
-// export const removeEmail = middy(_removeEmail).use(cors());
-// export const deleteContract = middy(_deleteContract).use(cors());
