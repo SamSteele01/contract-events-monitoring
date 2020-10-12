@@ -2,58 +2,30 @@
   export let address;
 
   import { onMount } from "svelte";
-  import {
-    Row,
-    TextInput,
-    Tag,
-    Button,
-  } from "carbon-components-svelte";
+  import { Row, TextInput, Tag, Button } from "carbon-components-svelte";
+  import superagent from "superagent";
 
   let contractList = [];
   let isDetailsCardVisible = false;
-  
+
   // fetch list
   async function fetchContractList() {
     try {
-      // contractList = await fetch(
-      //   `${process.env.API_GATEWAY_URL}/dev/contracts`,
-      //   {
-      //     method: "GET",
-      //     mode: "cors",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //   }
-      // );
-      
-      // testing
-      contractList = [
-        {
-          name: "DAI",
-          address: "0x3456765432345",
-          network: "mainnet",
-        },
-        {
-          name: "wETH",
-          address: "0x3456765432345",
-          network: "mainnet",
-        },
-        {
-          name: "cDAI",
-          address: "0x3456765432345",
-          network: "mainnet",
-        }
-      ]
-      
+      const response = await superagent
+        .get(`${process.env.API_GATEWAY_URL}/dev/contracts`)
+        .set("Content-Type", "application/json");
+
+      console.log("CONTRACTLIST body", response.body);
+      contractList = response.body.Items;
     } catch (error) {
       console.error(error);
     }
   }
-  
+
   function viewContractDetails(_address) {
     // open details card/view
     address = _address;
-    isDetailsCardVisible = true
+    isDetailsCardVisible = true;
   }
 
   onMount(() => {
@@ -65,9 +37,16 @@
 {#each contractList as contract}
   <Row style="padding-top: 1rem; padding-bottom: 1rem">
     <TextInput labelText="Name" value={contract.name} readonly />
+  </Row>
+  <Row style="padding-top: 1rem; padding-bottom: 1rem">
     <TextInput labelText="Address" value={contract.address} readonly />
+  </Row>
+  <Row style="padding-top: 1rem; padding-bottom: 1rem" >
     <Tag type="green">{contract.network}</Tag>
-    <Button on:click={() => viewContractDetails(contract.address)}>View Details</Button>
+    
+    <Button on:click={() => viewContractDetails(contract.address)}>
+      View Details
+    </Button>
   </Row>
 {:else}
   <!-- empty list -->

@@ -18,7 +18,7 @@
 
   async function addEmail() {
     try {
-      contract = await fetch(
+      const response = await fetch(
         `${process.env.API_GATEWAY_URL}/dev/contracts/add-email`,
         {
           method: "PUT",
@@ -26,19 +26,19 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: { address, email: newEmail, eventIndex },
+          body: JSON.stringify({ address, email: newEmail, eventIndex }),
         }
       );
-      dispatch("emailAdded"); // refresh list
+      dispatch("emailChange", {}); // refresh list
       newEmail = "";
     } catch (error) {
       console.error(error);
     }
   }
 
-  async function deleteEmail(index) {
+  async function deleteEmail(email) {
     try {
-      contract = await fetch(
+      const response = await fetch(
         `${process.env.API_GATEWAY_URL}/dev/contracts/remove-email`,
         {
           method: "PUT",
@@ -46,10 +46,10 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: { address, eventIndex, emailIndex: index },
+          body: JSON.stringify({ address, eventIndex, email }),
         }
       );
-      dispatch("emailAdded"); // refresh list
+      dispatch("emailChange", {}); // refresh list
     } catch (error) {
       console.error(error);
     }
@@ -75,7 +75,7 @@
             icon={TrashCan32}
             hasIconOnly
             kind="danger"
-            on:click={() => deleteEmail(index)}>
+            on:click={() => deleteEmail(email)}>
             Delete
           </Button>
         </Row>
