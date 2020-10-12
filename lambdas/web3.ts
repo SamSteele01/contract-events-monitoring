@@ -174,15 +174,13 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
         }
 
         // send emails
-        ses.sendEmail(params, (err, data) => {
-          if (err) {
-            console.log("Error sending email: ", err);
-            // add to an emailErrors array ??
-          };
-          if (data) {
-            console.log('Email sent!', data);
-          };
-        });
+        try {
+          const emailResponse = await ses.sendEmail(params).promise();
+          console.log('Email sent!', emailResponse);
+        } catch (error) {
+          console.log("Error sending email: ", error);
+          // add to an emailErrors array ??
+        }
       }
     });
   });
