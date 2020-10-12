@@ -28,16 +28,16 @@ email:
 - [x] set up SES
 - [x] test send
 - [x] debug error with fs.readFileSync
-- [ ] remove sandbox
+- [ ] remove sandbox - waiting on AWS, case ID [7478286451](https://console.aws.amazon.com/support/home?#/case/?displayId=7478286451&language=en)
 
 
 UI:
-- [ ] parse ABI on blur
-- [ ] create all components
-- [ ] connect to APIs
+- [ ] ~~parse ABI on blur~~
+- [x] create all components
+- [x] connect to APIs
   
 lambdas:
 - [x] run locally
 - [x] deploy using serverless
-- [ ] get contracts for testing - use popular tokens or defi projects
-- [ ] test getting events from contracts
+- [x] get contracts for testing - use popular tokens or defi projects
+- [x] test getting events from contracts

@@ -5,7 +5,7 @@
 import "source-map-support/register";
 import * as AWS from "aws-sdk"; // eslint-disable-line import/no-extraneous-dependencies
 import { Handler, Context, APIGatewayEvent } from "aws-lambda";
-import dynamodbLocal from 'serverless-dynamodb-client';
+// import dynamodbLocal from 'serverless-dynamodb-client';
 import Web3 from "web3";
 import { createResponse, createErrorResponse } from '../functions/responses';
 import {
@@ -15,8 +15,8 @@ import {
   validateString,
 } from "../functions/validators";
 
-// const dynamoDb = new AWS.DynamoDB.DocumentClient();
-const dynamoDb = dynamodbLocal.doc;  // return an instance of new AWS.DynamoDB.DocumentClient() aimed locally.
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
+// const dynamoDb = dynamodbLocal.doc;  // return an instance of new AWS.DynamoDB.DocumentClient() aimed locally.
 const web3 = new Web3('https://mainnet.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0')
 
 /* 
@@ -36,11 +36,9 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
   } catch (error) {
     return createErrorResponse(400, error.message);
   }
-  // abi is JSON
+  // validate that abi is JSON
   let events = [];
-
   try {
-    // const ABIjs = JSON.parse(data.abi.toString()); // needed?
     const ABIjs = JSON.parse(data.abi);
     // get event names and inputs
     events = ABIjs.filter((obj) => obj.type === "event").map((event) => ({

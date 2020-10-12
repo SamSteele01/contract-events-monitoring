@@ -1,7 +1,7 @@
 import 'source-map-support/register';
 import * as AWS from 'aws-sdk';
 import { Handler, Context } from 'aws-lambda';
-import dynamodbLocal from 'serverless-dynamodb-client';
+// import dynamodbLocal from 'serverless-dynamodb-client';
 import Web3 from "web3";
 import handlebars from "handlebars";
 import { createResponse, createErrorResponse } from '../functions/responses';
@@ -9,8 +9,8 @@ import { Contract, Event } from '../data/interfaces'
 
 
 const ses = new AWS.SES();
-// const dynamoDb = new AWS.DynamoDB.DocumentClient();
-const dynamoDb = dynamodbLocal.doc;
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
+// const dynamoDb = dynamodbLocal.doc;
 const web3 = new Web3('https://mainnet.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0')
 
 // const networks = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']; // add testnets
@@ -78,7 +78,6 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
   let contractDbItems = [];
   try {
     contractDbItems = (await dynamoDb.scan(params).promise()).Items;
-    // console.log('CONTRACTDBITEMS', contractDbItems);
   } catch (error) {
     console.log("list ERROR", error);
     return createErrorResponse(500, error.message);
@@ -90,8 +89,7 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
       return acc.concat(event.emails);
     }, [])
     return emails.length > 0;
-  })
-  // console.log('CONTRACTSWITHSUBSCRIBEDEVENTS', contractsWithSubscribedEvents);
+  });
 
   let requestErrors = [];
 
@@ -115,7 +113,7 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
       if (contractEvents.length > 0) {
         console.log('CONTRACTEVENTS', contractEvents);
         const eventHashes = contractEvents.map(contractEvent => contractEvent.transactionHash);
-        // prepare template
+        // prepare template - ideally we could map over events using a partial for each
         // for now, just send an email that has a link to etherscan
         const template = handlebars.compile(emailTemplate);
 
