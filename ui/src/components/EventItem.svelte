@@ -9,7 +9,7 @@
     Column,
     Row,
     TextInput,
-    Button,
+    Button
   } from "carbon-components-svelte";
   import TrashCan32 from "carbon-icons-svelte/lib/TrashCan32";
 
@@ -24,9 +24,9 @@
           method: "PUT",
           mode: "cors",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify({ address, email: newEmail, eventIndex }),
+          body: JSON.stringify({ address, email: newEmail, eventIndex })
         }
       );
       dispatch("emailChange", {}); // refresh list
@@ -44,9 +44,9 @@
           method: "PUT",
           mode: "cors",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify({ address, eventIndex, email }),
+          body: JSON.stringify({ address, eventIndex, email })
         }
       );
       dispatch("emailChange", {}); // refresh list
@@ -65,18 +65,20 @@
       {/each}
     </Column>
   </Row>
-  <Row>
+  <Row style="margin-top: 1rem">
     <Column>
       <Row>Subscribed Emails:</Row>
       {#each contractEvent.emails as email, index}
-        <Row>
+        <Row style="justify-content: space-between">
           {email}
           <Button
             icon={TrashCan32}
             hasIconOnly
+            tooltipPosition="bottom"
+            tooltipAlignment="center"
+            iconDescription="Remove Email"
             kind="danger"
             on:click={() => deleteEmail(email)}>
-            Delete
           </Button>
         </Row>
       {/each}
