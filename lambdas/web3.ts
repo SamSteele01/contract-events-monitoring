@@ -55,7 +55,7 @@ const emailTemplate = `
   </html>
 `
 
-async function updateLastBlockChecked(blockNumber: number, contractAddress: string) {
+async function updateLastBlockChecked(blockNumber: number, contractAddress: string, errorTries: number) {
   const params = {
     TableName: process.env.CONTRACT_TABLE,
     Key: {
@@ -71,9 +71,20 @@ async function updateLastBlockChecked(blockNumber: number, contractAddress: stri
     await dynamoDb.update(params).promise();
     return `UPDATELASTBLOCKCHECKED SUCCESS ${contractAddress} ${blockNumber}`;
   } catch (error) {
-    console.log("UPDATELASTBLOCKCHECKED ERROR", error);
-    // call recursively until it succedes. If there are DB connection issues we may have bigger problems.
-    return await updateLastBlockChecked(blockNumber, contractAddress);
+    // call recursively until it succedes or tries too many times.
+    if (errorTries > 100) {
+      /* If there are DB connection issues we may have bigger problems. Writing to a different table
+        may not work. Perhaps a different persistance service such as Redis?
+        For now, return a string to be logged. */
+      return `UPDATELASTBLOCKCHECKED ERROR: ${error} \n Contract address ${contractAddress} was not updated with lastBlockChecked = ${blockNumber}`;
+    } else {
+      errorTries += 1;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(updateLastBlockChecked(blockNumber, contractAddress, errorTries));
+        }, 50);
+      });
+    }
   }
 }
 
@@ -175,7 +186,7 @@ export const getLatestEventsAndProcess: Handler = async (_event, _context: Conte
   let updateBlockNumberPromises = [];
   web3.eth.getBlockNumber().then(number => {
     contractDbItems.forEach(contract => {
-      updateBlockNumberPromises.push(updateLastBlockChecked(number, contract.address));
+      updateBlockNumberPromises.push(updateLastBlockChecked(number, contract.address, 0));
     });
   });
   Promise.all(updateBlockNumberPromises).then((logs: string[]) => {
