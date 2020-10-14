@@ -9,6 +9,3 @@ jspm_packages
 
 # Webpack directories
 .webpack
-
-# Local testing
-scripts
