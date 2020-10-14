@@ -10,8 +10,8 @@ export function validateAddress(address: string): void | Error {
   if (typeof address !== 'string') {
     throw new Error('Address must be a string.');
   }
-  const regex = /[0-9xA-Fa-f]+/
-  if (!address.includes('0x') || !regex.test(address)) {
+  const regex = /^0x[a-fA-F0-9]{40}$/
+  if (!regex.test(address)) {
     throw new Error('Not a valid Ethereum address')
   }
   if (address !== Web3.utils.toChecksumAddress(address)) {
