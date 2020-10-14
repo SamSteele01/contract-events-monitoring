@@ -12,3 +12,7 @@ export interface Event {
   inputs: string[],
   emails: string[]
 }
+
+export interface ABIobj {
+  type: string
+}

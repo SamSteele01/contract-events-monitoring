@@ -14,7 +14,7 @@ import {
   validateNumber,
   validateString,
 } from "../functions/validators";
-import { Event } from '../data/interfaces';
+import { Event, ABIobj } from '../data/interfaces';
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 // const dynamoDb = dynamodbLocal.doc;  // return an instance of new AWS.DynamoDB.DocumentClient() aimed locally.
@@ -42,7 +42,7 @@ export const create: Handler = async (event: APIGatewayEvent, _context: Context)
   try {
     const ABIjs = JSON.parse(data.abi);
     // get event names and inputs
-    events = ABIjs.filter((obj: any) => obj.type === "event").map((event: Event) => ({
+    events = ABIjs.filter((obj: ABIobj) => obj.type === "event").map((event: Event) => ({
       name: event.name,
       inputs: event.inputs,
       emails: [],
