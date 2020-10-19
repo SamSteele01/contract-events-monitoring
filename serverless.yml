@@ -7,7 +7,7 @@ provider:
   region: us-east-2
   environment:
     NODE_ENV: dev
-    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    CONTRACT_TABLE: ${self:service}-${opt:stage, self:provider.stage}
     FROM_ADDRESS: 'ssteele017@gmail.com'
   iamRoleStatements:
     - Effect: Allow
@@ -18,7 +18,7 @@ provider:
       #   - dynamodb:PutItem
       #   - dynamodb:UpdateItem
       #   - dynamodb:DeleteItem
-      # Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      # Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONTRACT_TABLE}"
       Action:
         - dynamodb:*
         - ses:*
@@ -148,5 +148,5 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        TableName: ${self:provider.environment.CONTRACT_TABLE}
         

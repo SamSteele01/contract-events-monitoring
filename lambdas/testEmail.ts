@@ -1,7 +1,6 @@
 import "source-map-support/register";
-import fs from "fs";
 import * as AWS from "aws-sdk";
-import { Handler, Context, APIGatewayProxyResult } from "aws-lambda";
+import { Handler, APIGatewayProxyResult } from "aws-lambda";
 import handlebars from "handlebars";
 
 const ses = new AWS.SES();
@@ -46,21 +45,21 @@ const testHtml = `
   @req.body { event, email }
 */
 export const send: Handler = (event, _context, callback) => {
-  
+
   const eventBody = JSON.parse(event.body)
   console.log("input DATA", eventBody);
-  
+
   // get template
   // const testHtml = fs.readFileSync("../data/emailTemplates/test.html"); // this doesn't work !!
-  
+
   // compile
   const template = handlebars.compile(testHtml);
-  
+
   const emailTemplate = template({
     // ...vars
     message: eventBody.message
   })
-  
+
   const params = {
     Source: process.env.FROM_ADDRESS, // has to be verified address
     ReturnPath: "ssteele017@gmail.com",
@@ -83,16 +82,16 @@ export const send: Handler = (event, _context, callback) => {
       }
     }
   }
-  
+
   // send
   ses.sendEmail(params, (err, data) => {
     let response: APIGatewayProxyResult = {};
-    
+
     if (err) {
       console.log("Error sending test email: ", err);
       response = {
         "statusCode": err.statusCode || 501,
-        "headers": { 
+        "headers": {
           "Content-Type": "text/plain",
           "Access-Control-Allow-Origin": "*",
         },
@@ -101,12 +100,12 @@ export const send: Handler = (event, _context, callback) => {
       callback(null, response);
       return;
     }
-    
+
     // "Content-Type": "application/json",
     console.log("DATA", data);
     response = {
       "statusCode": 200,
-      "headers": { 
+      "headers": {
         "Access-Control-Allow-Origin": "*"
       },
       "body": `email successfully sent to ${eventBody.email}`

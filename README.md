@@ -28,11 +28,10 @@ email:
 - [x] set up SES
 - [x] test send
 - [x] debug error with fs.readFileSync
-- [ ] remove sandbox - waiting on AWS, case ID [7478286451](https://console.aws.amazon.com/support/home?#/case/?displayId=7478286451&language=en)
+- [x] remove sandbox - waiting on AWS, case ID [7478286451](https://console.aws.amazon.com/support/home?#/case/?displayId=7478286451&language=en)
 
 
 UI:
-- [ ] ~~parse ABI on blur~~
 - [x] create all components
 - [x] connect to APIs
   

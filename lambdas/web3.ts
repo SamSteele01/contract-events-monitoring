@@ -4,16 +4,14 @@ import { Handler, Context } from 'aws-lambda';
 // import dynamodbLocal from 'serverless-dynamodb-client';
 import Web3 from "web3";
 import handlebars from "handlebars";
-import { createResponse, createErrorResponse } from '../functions/responses';
-import { Contract, Event } from '../data/interfaces'
+import { createErrorResponse } from '../functions/responses';
+import { Event } from '../data/interfaces'
 
 
 const ses = new AWS.SES();
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 // const dynamoDb = dynamodbLocal.doc;
 const web3 = new Web3('https://mainnet.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0')
-
-// const networks = ['mainnet', 'ropsten', 'kovan', 'rinkeby', 'goerli']; // add testnets
 
 const emailTemplate = `
   <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -48,7 +46,7 @@ const emailTemplate = `
         </tr>
         {{#each eventHashes as |eventHash|}}
           <tr>
-            <a href="https://etherscan.io/tx/{{eventHash}}" target="_blank">{{event}}</a> 
+            <a href="https://etherscan.io/tx/{{eventHash}}" target="_blank">{{eventHash}}</a> 
           </tr>
         {{/each}}
         
@@ -57,22 +55,45 @@ const emailTemplate = `
   </html>
 `
 
+async function updateLastBlockChecked(blockNumber: number, contractAddress: string, errorTries: number) {
+  const params = {
+    TableName: process.env.CONTRACT_TABLE,
+    Key: {
+      address: contractAddress,
+    },
+    ExpressionAttributeValues: {
+      ":blockNumber": blockNumber,
+    },
+    UpdateExpression: 'SET lastBlockChecked = :blockNumber'
+  };
+
+  try {
+    await dynamoDb.update(params).promise();
+    return `UPDATELASTBLOCKCHECKED SUCCESS ${contractAddress} ${blockNumber}`;
+  } catch (error) {
+    // call recursively until it succedes or tries too many times.
+    if (errorTries > 100) {
+      /* If there are DB connection issues we may have bigger problems. Writing to a different table
+        may not work. Perhaps a different persistance service such as Redis?
+        For now, return a string to be logged. */
+      return `UPDATELASTBLOCKCHECKED ERROR: ${error} \n Contract address ${contractAddress} was not updated with lastBlockChecked = ${blockNumber}`;
+    } else {
+      errorTries += 1;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(updateLastBlockChecked(blockNumber, contractAddress, errorTries));
+        }, 50);
+      });
+    }
+  }
+}
+
 // called by CRON event
-export const getLatestEventsAndProcess: Handler = async (event, _context: Context) => {
-  // let processEventsFromNetworkPromises = [];
-  // // look up each network, one at a time
-  // networks.forEach(network => {
-  //   const web3 = new Web3(`https://${network}.infura.io/v3/e18137a5d4fe454fa1ec85f00d56b3b0`); // url
-  //   // fire function
-  //   processEventsFromNetworkPromises.push(processEventsFromNetwork(web3)); // this function would be everything below
-  // })
-  // Promise.all(processEventsFromNetworkPromises).then(networks => {
-  //   console.log('NETWORKS', networks);
-  //   // process.exit();
-  // })
+export const getLatestEventsAndProcess: Handler = async (_event, _context: Context) => {
+  console.log('_EVENT', _event);
 
   const params = {
-    TableName: process.env.DYNAMODB_TABLE,
+    TableName: process.env.CONTRACT_TABLE,
   };
 
   let contractDbItems = [];
@@ -111,20 +132,20 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
         })
       }
       if (contractEvents.length > 0) {
-        console.log('CONTRACTEVENTS', contractEvents);
-        const eventHashes = contractEvents.map(contractEvent => contractEvent.transactionHash);
+        const eventHashes: string[] = contractEvents.map(contractEvent => contractEvent.transactionHash);
+        const uniqueTxHashes: string[] = [...new Set(eventHashes)];
         // prepare template - ideally we could map over events using a partial for each
-        // for now, just send an email that has a link to etherscan
+        // for now, just send an email that has links to etherscan
         const template = handlebars.compile(emailTemplate);
 
         const htmlEmail = template({
           contract: contract.name,
           event: event.name,
-          eventHashes
+          eventHashes: uniqueTxHashes
         })
 
-        const linksForText = eventHashes.reduce((acc, eventHash) => {
-          acc += `https://etherscan.io/tx/${eventHash} \n`
+        const linksForText = uniqueTxHashes.reduce((_acc: string, eventHash) => {
+          return _acc += `https://etherscan.io/tx/${eventHash} \n `
         }, '');
 
         const params = {
@@ -150,40 +171,27 @@ export const getLatestEventsAndProcess: Handler = async (event, _context: Contex
         }
 
         // send emails
-        ses.sendEmail(params, (err, data) => {
-          if (err) {
-            console.log("Error sending email: ", err);
-            // add to an emailErrors array ??
-          };
-          if (data) {
-            console.log('Email sent!', data);
-          };
-        });
-      }
-    });
-
-    // update db
-    web3.eth.getBlockNumber().then(async number => {
-      const params = {
-        TableName: process.env.DYNAMODB_TABLE,
-        Key: {
-          address: contract.address,
-        },
-        ExpressionAttributeValues: {
-          ":blockNumber": number,
-        },
-        UpdateExpression: 'SET lastBlockChecked = :blockNumber'
-      };
-
-      try {
-        const updateLastBlockChecked = await dynamoDb.update(params).promise();
-        console.log('UPDATELASTBLOCKCHECKED', updateLastBlockChecked);
-      } catch (error) {
-        console.log("UPDATELASTBLOCKCHECKED ERROR", error);
-        // should deal with possible duplicates
+        try {
+          const emailResponse = await ses.sendEmail(params).promise();
+          console.log('Email sent!', emailResponse);
+        } catch (error) {
+          console.log("Error sending email: ", error);
+          // add to an emailErrors array ??
+        }
       }
     });
   });
+
+  // update db
+  let updateBlockNumberPromises = [];
+  web3.eth.getBlockNumber().then(number => {
+    contractDbItems.forEach(contract => {
+      updateBlockNumberPromises.push(updateLastBlockChecked(number, contract.address, 0));
+    });
+  });
+  Promise.all(updateBlockNumberPromises).then((logs: string[]) => {
+    logs.forEach(log => console.log(log));
+  })
 
   // try again with requestErrors 
   // try again with emailErrors
